@@ -1,0 +1,72 @@
+services:
+  # 1. El Cerebro (PHP 8.4) - Desarrollando el Paquete Laravel
+  app:
+    build:
+      context: .
+      target: development
+    container_name: time-app
+    restart: unless-stopped
+    volumes:
+      # Repositorio 1: El Laboratorio (App de prueba)
+      - .:/var/www
+      # Repositorio 2: El Paquete PHP (Mapeado para que Composer lo vea local)
+      - ../time-laravel-pkg:/var/www/time-laravel-pkg
+      # Repositorio 3: La Librería Vue (Mapeado para que Vite lo vea local)
+      - ../Time:/var/www/time-ui-pkg
+    networks:
+      - time-net
+
+  # 2. El Portero (Nginx)
+  web:
+    image: nginx:alpine
+    container_name: time-web
+    restart: unless-stopped
+    ports:
+      - "8090:80"        # URL: http://localhost:8090
+      - "5174:5173"      # Vite Dev Server
+    volumes:
+      - .:/var/www
+      - ./docker-conf/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - time-net
+
+  # 3. La Base de Datos (MariaDB)
+  db:
+    image: mariadb:10.11
+    container_name: time-db
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-time_lab}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_USER: ${DB_USERNAME:-laravel}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+    volumes:
+      - time-db-data:/var/lib/mysql
+    networks:
+      - time-net
+
+  # 4. Herramienta de DB (PhpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: time-pma
+    ports:
+      - "8095:80"        # URL: http://localhost:8095
+    environment:
+      PMA_HOST: db
+    networks:
+      - time-net
+
+  # 5. Redis (Para caché y velocidad)
+  redis:
+    image: redis:alpine
+    container_name: time-redis
+    networks:
+      - time-net
+
+networks:
+  time-net:
+    driver: bridge
+
+volumes:
+  time-db-data:

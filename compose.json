@@ -1,0 +1,9 @@
+"repositories": [
+    {
+        "type": "path",
+        "url": "../time-laravel-pkg"
+    }
+],
+"require": {
+    "time/table": "dev-main"
+}
